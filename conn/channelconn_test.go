@@ -50,7 +50,9 @@ func testChannelConn_Conn_Read(t *testing.T) {
 	var sendMsg []byte = make([]byte, 32)
 	var recvBuf []byte = make([]byte, 64)
 
-	rand.Read(sendMsg)
+	if _, err := rand.Read(sendMsg); err != nil {
+		t.Fatalf("crypto/rand.Read() failed: %v", err)
+	}
 
 	// goroutine writing to rx
 	go func() {
@@ -76,9 +78,11 @@ func testChannelConn_Conn_Read(t *testing.T) {
 
 func testChannelConn_Conn_Write(t *testing.T) {
 	var sendBuf []byte = make([]byte, 32)
-	var recvMsg []byte = make([]byte, 64)
+	var recvMsg []byte
 
-	rand.Read(sendBuf)
+	if _, err := rand.Read(sendBuf); err != nil {
+		t.Fatalf("crypto/rand.Read() failed: %v", err)
+	}
 
 	// goroutine writing to cconn
 	go func() {
@@ -223,7 +227,9 @@ func testChannelConn_NonblockingConn_SetNonblock_Buffered_Read(t *testing.T) {
 
 	// write to rx
 	var sendMsg []byte = make([]byte, 32)
-	rand.Read(sendMsg)
+	if _, err := rand.Read(sendMsg); err != nil {
+		t.Fatalf("crypto/rand.Read() failed: %v", err)
+	}
 
 	var sendMsgCopy []byte = make([]byte, len(sendMsg))
 	copy(sendMsgCopy, sendMsg)
@@ -248,7 +254,9 @@ func testChannelConn_NonblockingConn_SetNonblock_Buffered_Read(t *testing.T) {
 
 func testChannelConn_NonblockingConn_SetNonblock_Buffered_Write(t *testing.T) {
 	var sendBuf []byte = make([]byte, 32)
-	rand.Read(sendBuf)
+	if _, err := rand.Read(sendBuf); err != nil {
+		t.Fatalf("crypto/rand.Read() failed: %v", err)
+	}
 
 	// write without full buffer should succeed
 	if n, err := cconn.Write(sendBuf); err != nil {
@@ -310,7 +318,9 @@ func testChannelConn_NonblockingConn_SetNonblock_Unbuffered_Read(t *testing.T) {
 
 	// use a goroutine to write to rx
 	var sendMsg []byte = make([]byte, 32)
-	rand.Read(sendMsg)
+	if _, err := rand.Read(sendMsg); err != nil {
+		t.Fatalf("crypto/rand.Read() failed: %v", err)
+	}
 
 	var sendMsgCopy []byte = make([]byte, len(sendMsg))
 	copy(sendMsgCopy, sendMsg)
@@ -345,7 +355,9 @@ func testChannelConn_NonblockingConn_SetNonblock_Unbuffered_Read(t *testing.T) {
 
 func testChannelConn_NonblockingConn_SetNonblock_Unbuffered_Write(t *testing.T) {
 	var sendBuf []byte = make([]byte, 32)
-	rand.Read(sendBuf)
+	if _, err := rand.Read(sendBuf); err != nil {
+		t.Fatalf("crypto/rand.Read() failed: %v", err)
+	}
 
 	// write without a pending reader on tx should yield syscall.EAGAIN
 	if n, err := cconn.Write(sendBuf); err != syscall.EAGAIN {
@@ -425,7 +437,9 @@ func testChannelConn_PollConn_Buffered_PollR(t *testing.T) {
 
 	// write to rx
 	var sendMsg []byte = make([]byte, 32)
-	rand.Read(sendMsg)
+	if _, err := rand.Read(sendMsg); err != nil {
+		t.Fatalf("crypto/rand.Read() failed: %v", err)
+	}
 
 	var sendMsgCopy []byte = make([]byte, len(sendMsg))
 	copy(sendMsgCopy, sendMsg)
@@ -479,7 +493,9 @@ func testChannelConn_PollConn_Buffered_PollW(t *testing.T) {
 
 	// write to cconn
 	var sendBuf []byte = make([]byte, 32)
-	rand.Read(sendBuf)
+	if _, err := rand.Read(sendBuf); err != nil {
+		t.Fatalf("crypto/rand.Read() failed: %v", err)
+	}
 
 	if n, err := cconn.Write(sendBuf); err != nil {
 		t.Fatalf("cconn.Write() failed: %v", err)
@@ -511,7 +527,9 @@ func testChannelConn_PollConn_Buffered_PollW(t *testing.T) {
 
 	// write another message to cconn
 	var sendBuf2 []byte = make([]byte, 32)
-	rand.Read(sendBuf2)
+	if _, err := rand.Read(sendBuf2); err != nil {
+		t.Fatalf("crypto/rand.Read() failed: %v", err)
+	}
 
 	if n, err := cconn.Write(sendBuf2); err != nil {
 		t.Fatalf("cconn.Write() failed: %v", err)
@@ -711,7 +729,9 @@ func testChannelConn_PollConn_Unbuffered_PollW(t *testing.T) {
 
 	// Next, we verify that PollW will not unblock the other end
 	var sendBuf []byte = make([]byte, 32)
-	rand.Read(sendBuf)
+	if _, err := rand.Read(sendBuf); err != nil {
+		t.Fatalf("crypto/rand.Read() failed: %v", err)
+	}
 
 	// use rx and tx to create a reversed ChannelConn, use goroutine to read from it
 	rcconn := NewChannelConn(tx, rx)
