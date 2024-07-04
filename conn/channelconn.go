@@ -26,8 +26,6 @@ type ChannelConn struct {
 
 	nonblocking atomic.Bool
 
-	// readDeadline  atomic.Value // time.Time
-	// writeDeadline atomic.Value // time.Time
 }
 
 func NewChannelConn(rx <-chan []byte, tx chan<- []byte) *ChannelConn {
