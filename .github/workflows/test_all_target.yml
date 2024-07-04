@@ -1,0 +1,111 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: "Go: test on all targets"
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  test-amd64-linux_and_windows:
+    name: go${{ matrix.go }} (${{ matrix.os }}/amd64)
+    strategy:
+      matrix:
+        os: [ "ubuntu", "windows" ] 
+        go: [ "1.21.x", "1.22.x" ] # we support the latest 2 stable versions of Go
+    runs-on: ${{ matrix.os }}-latest # use latest OS image
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go }}
+    - run: go version
+    - name: Build and Test
+      run:  |
+        go build -v ./...
+        go test -v ./...
+
+  test-arm64_and_riscv64-linux:
+    name: go${{ matrix.go }} (linux/${{ matrix.arch }})
+    strategy:
+      matrix:
+        go: [ "1.21.x", "1.22.x" ] # we support the latest 2 stable versions of Go
+        arch: [ "arm64", "riscv64" ]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go }}
+    - name: Install QEMU
+      uses: docker/setup-qemu-action@v3
+    - name: Build and Test
+      run:  |
+        GOARCH=${{ matrix.arch }} go build -v ./...
+        GOARCH=${{ matrix.arch }} go test -v ./...
+        
+  test-amd64-macos:
+    name: go${{ matrix.go }} (macos/amd64)
+    strategy:
+      matrix:
+        go: [ "1.21.x", "1.22.x" ] # we support the latest 2 stable versions of Go
+    runs-on: macos-12
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go }}
+    - run: go version
+    - name: Build and Test
+      run:  |
+        go build -v ./...
+        go test -v ./...
+
+  test-arm64-macos:
+    name: go${{ matrix.go }} (macos/arm64)
+    strategy:
+      matrix:
+        go: [ "1.21.x", "1.22.x" ] # we support the latest 2 stable versions of Go
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go }}
+    - run: go version
+    - name: Build and Test
+      run:  |
+        go build -v ./...
+        go test -v ./...
+
+  test-amd64-linux_with_race_detection:
+    name: Race Detection
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: 1 # go: -race requires cgo; enable cgo by setting CGO_ENABLED=1
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v4
+      with:
+        go-version: '1.22.x'
+    - name: Test with Race Detection enabled
+      run: go test -race ./...
+
+  golangci-lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+          cache: false
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: -v --disable structcheck,govet --timeout 5m
