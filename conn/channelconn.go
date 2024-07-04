@@ -25,7 +25,6 @@ type ChannelConn struct {
 	pendingWrite atomic.Bool // indicates if there is an outstanding writer blocking, protecting TX channel
 
 	nonblocking atomic.Bool
-
 }
 
 func NewChannelConn(rx <-chan []byte, tx chan<- []byte) *ChannelConn {
@@ -41,7 +40,6 @@ var _ Conn = (*ChannelConn)(nil)
 
 // Read reads data from the channel. Implements [net.Conn].
 func (c *ChannelConn) Read(b []byte) (n int, err error) {
-
 	if c.closed.Load() {
 		return 0, io.ErrClosedPipe
 	}
