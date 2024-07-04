@@ -69,9 +69,4 @@ type PollConn interface {
 
 	// PollW polls the connection for writability.
 	PollW(ctx context.Context) (bool, error)
-
-	// PollRW polls the connection for readability and writability at the
-	// same time. It returns true if the connection became readable, writable,
-	// or both.
-	PollRW(ctx context.Context) (bool, error)
 }
