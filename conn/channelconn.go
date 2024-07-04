@@ -41,12 +41,6 @@ var _ Conn = (*ChannelConn)(nil)
 
 // Read reads data from the channel. Implements [net.Conn].
 func (c *ChannelConn) Read(b []byte) (n int, err error) {
-	// // check if read deadline is set to a non-zero value
-	// if readDeadline := c.readDeadline.Load(); readDeadline != nil {
-	// 	if readDeadlineTime, ok := readDeadline.(time.Time); ok && !readDeadlineTime.IsZero() {
-	// 		return c.readWithDeadline(b, readDeadlineTime)
-	// 	}
-	// }
 
 	if c.closed.Load() {
 		return 0, io.ErrClosedPipe
