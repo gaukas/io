@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
@@ -321,7 +322,7 @@ func testChannelConn_NonblockingConn_SetNonblock_Unbuffered_Read(t *testing.T) {
 	var n int
 	var err error
 	n, err = cconn.Read(recvBuf)
-	for n == 0 && err == syscall.EAGAIN && time.Since(timeGoroutine) < 10*time.Millisecond {
+	for n == 0 && err == syscall.EAGAIN && time.Since(timeGoroutine) < 1*time.Millisecond {
 		n, err = cconn.Read(recvBuf)
 		runtime.Gosched()
 	}
@@ -368,7 +369,7 @@ func testChannelConn_NonblockingConn_SetNonblock_Unbuffered_Write(t *testing.T) 
 	var n int
 	var err error
 	n, err = cconn.Write(sendBuf)
-	for n == 0 && err == syscall.EAGAIN && time.Since(timeGoroutine) < 10*time.Millisecond {
+	for n == 0 && err == syscall.EAGAIN && time.Since(timeGoroutine) < 1*time.Millisecond {
 		n, err = cconn.Write(sendBuf)
 		runtime.Gosched()
 	}
@@ -394,6 +395,7 @@ func testChannelConn_NonblockingConn_SetNonblock_Unbuffered_Write(t *testing.T) 
 
 func testChannelConn_PollConn(t *testing.T) {
 	t.Run("Buffered", testChannelConn_PollConn_Buffered)
+	t.Run("Unbuffered", testChannelConn_PollConn_Unbuffered)
 }
 
 func testChannelConn_PollConn_Buffered(t *testing.T) {
@@ -406,7 +408,6 @@ func testChannelConn_PollConn_Buffered(t *testing.T) {
 
 	t.Run("PollR", testChannelConn_PollConn_Buffered_PollR)
 	t.Run("PollW", testChannelConn_PollConn_Buffered_PollW)
-	t.Run("PollRW", testChannelConn_PollConn_Buffered_PollRW)
 
 	if err := cconn.Close(); err != nil && err != io.ErrClosedPipe {
 		t.Fatalf("cconn.Close() failed: %v", err)
@@ -418,10 +419,8 @@ func testChannelConn_PollConn_Buffered_PollR(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
 
-	if ok, err := cconn.PollR(ctx); ok {
-		t.Fatalf("expected false, got true")
-	} else if err != context.DeadlineExceeded {
-		t.Fatalf("expected %v, got %v", context.DeadlineExceeded, err)
+	if ok, err := cconn.PollR(ctx); ok || err != context.DeadlineExceeded {
+		t.Fatalf("expected (false, %v), got (%v, %v)", context.DeadlineExceeded, ok, err)
 	}
 
 	// write to rx
@@ -436,20 +435,16 @@ func testChannelConn_PollConn_Buffered_PollR(t *testing.T) {
 	ctx, cancel2 := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel2()
 
-	if ok, err := cconn.PollR(ctx); !ok {
-		t.Fatalf("expected true, got false")
-	} else if err != nil {
-		t.Fatalf("expected nil, got %v", err)
+	if ok, err := cconn.PollR(ctx); !ok || err != nil {
+		t.Fatalf("expected (true, nil), got (%v, %v)", ok, err)
 	}
 
 	// PollR again, should return true since we did not read from cconn
 	ctx, cancel3 := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel3()
 
-	if ok, err := cconn.PollR(ctx); !ok {
-		t.Fatalf("expected true, got false")
-	} else if err != nil {
-		t.Fatalf("expected nil, got %v", err)
+	if ok, err := cconn.PollR(ctx); !ok || err != nil {
+		t.Fatalf("expected (true, nil), got (%v, %v)", ok, err)
 	}
 
 	// read from cconn
@@ -466,10 +461,8 @@ func testChannelConn_PollConn_Buffered_PollR(t *testing.T) {
 	ctx, cancel4 := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel4()
 
-	if ok, err := cconn.PollR(ctx); ok {
-		t.Fatalf("expected false, got true")
-	} else if err != context.DeadlineExceeded {
-		t.Fatalf("expected %v, got %v", context.DeadlineExceeded, err)
+	if ok, err := cconn.PollR(ctx); ok || err != context.DeadlineExceeded {
+		t.Fatalf("expected (false, %v), got (%v, %v)", context.DeadlineExceeded, ok, err)
 	}
 }
 
@@ -478,10 +471,8 @@ func testChannelConn_PollConn_Buffered_PollW(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
 
-	if ok, err := cconn.PollW(ctx); !ok {
-		t.Fatalf("expected true, got false")
-	} else if err != nil {
-		t.Fatalf("expected nil, got %v", err)
+	if ok, err := cconn.PollW(ctx); !ok || err != nil {
+		t.Fatalf("expected (true, nil), got (%v, %v)", ok, err)
 	} else if len(tx) != 0 || cap(tx) != 2 {
 		t.Fatalf("expected 0 out of 2 pending message, got %d out of %d", len(tx), cap(tx))
 	}
@@ -502,10 +493,8 @@ func testChannelConn_PollConn_Buffered_PollW(t *testing.T) {
 	ctx, cancel2 := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel2()
 
-	if ok, err := cconn.PollW(ctx); !ok {
-		t.Fatalf("expected true, got false")
-	} else if err != nil {
-		t.Fatalf("expected nil, got %v", err)
+	if ok, err := cconn.PollW(ctx); !ok || err != nil {
+		t.Fatalf("expected (true, nil), got (%v, %v)", ok, err)
 	} else if len(tx) != 1 || cap(tx) != 2 {
 		t.Fatalf("expected 1 out of 2 pending message, got %d out of %d", len(tx), cap(tx))
 	}
@@ -514,10 +503,8 @@ func testChannelConn_PollConn_Buffered_PollW(t *testing.T) {
 	ctx, cancel3 := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel3()
 
-	if ok, err := cconn.PollW(ctx); !ok {
-		t.Fatalf("expected true, got false")
-	} else if err != nil {
-		t.Fatalf("expected nil, got %v", err)
+	if ok, err := cconn.PollW(ctx); !ok || err != nil {
+		t.Fatalf("expected (true, nil), got (%v, %v)", ok, err)
 	} else if len(tx) != 1 || cap(tx) != 2 {
 		t.Fatalf("expected 1 out of 2 pending message, got %d out of %d", len(tx), cap(tx))
 	}
@@ -538,10 +525,8 @@ func testChannelConn_PollConn_Buffered_PollW(t *testing.T) {
 	ctx, cancel4 := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel4()
 
-	if ok, err := cconn.PollW(ctx); ok {
-		t.Fatalf("expected false, got true")
-	} else if err != context.DeadlineExceeded {
-		t.Fatalf("expected %v, got %v", context.DeadlineExceeded, err)
+	if ok, err := cconn.PollW(ctx); ok || err != context.DeadlineExceeded {
+		t.Fatalf("expected (false, %v), got (%v, %v)", context.DeadlineExceeded, ok, err)
 	} else if len(tx) != 2 || cap(tx) != 2 {
 		t.Fatalf("expected 2 out of 2 pending message, got %d out of %d", len(tx), cap(tx))
 	}
@@ -556,10 +541,8 @@ func testChannelConn_PollConn_Buffered_PollW(t *testing.T) {
 	ctx, cancel5 := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel5()
 
-	if ok, err := cconn.PollW(ctx); !ok {
-		t.Fatalf("expected true, got false")
-	} else if err != nil {
-		t.Fatalf("expected nil, got %v", err)
+	if ok, err := cconn.PollW(ctx); !ok || err != nil {
+		t.Fatalf("expected (true, nil), got (%v, %v)", ok, err)
 	} else if len(tx) != 1 || cap(tx) != 2 {
 		t.Fatalf("expected 1 out of 2 pending message, got %d out of %d", len(tx), cap(tx))
 	}
@@ -571,42 +554,215 @@ func testChannelConn_PollConn_Buffered_PollW(t *testing.T) {
 	}
 }
 
-func testChannelConn_PollConn_Buffered_PollRW(t *testing.T) {
-	// when both buffer is empty, PollRW should return true since we can write to tx
+func testChannelConn_PollConn_Unbuffered(t *testing.T) {
+	rx = make(chan []byte)
+	defer close(rx)
+
+	tx = make(chan []byte)
+	cconn = NewChannelConn(rx, tx)
+	cconn.SetNonblock(true)
+
+	t.Run("PollR", testChannelConn_PollConn_Unbuffered_PollR)
+	t.Run("PollW", testChannelConn_PollConn_Unbuffered_PollW)
+
+	if err := cconn.Close(); err != nil && err != io.ErrClosedPipe {
+		t.Fatalf("cconn.Close() failed: %v", err)
+	}
+}
+
+func testChannelConn_PollConn_Unbuffered_PollR(t *testing.T) {
+	// when no pending writer on rx, PollR should return false
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
 
-	if ok, err := cconn.PollRW(ctx); !ok {
-		t.Fatalf("expected true, got false")
-	} else if err != nil {
-		t.Fatalf("expected nil, got %v", err)
+	if ok, err := cconn.PollR(ctx); ok || err != context.DeadlineExceeded {
+		t.Fatalf("expected (false, %v), got (%v, %v)", context.DeadlineExceeded, ok, err)
 	}
 
-	// fill tx buffer
-	tx <- make([]byte, 32)
-	tx <- make([]byte, 32)
-
-	// PollRW should return false since write buffer is full and read buffer is still empty
-	ctx, cancel2 := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	longCtx, cancel2 := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel2()
 
-	if ok, err := cconn.PollRW(ctx); ok {
-		t.Fatalf("expected false, got true")
-	} else if err != context.DeadlineExceeded {
-		t.Fatalf("expected %v, got %v", context.DeadlineExceeded, err)
+	// use a goroutine to poll for read
+	var pollReady atomic.Bool
+	var wgPollR sync.WaitGroup
+	wgPollR.Add(1)
+	go func() {
+		defer wgPollR.Done()
+
+		if ok, err := cconn.PollR(longCtx); !ok || err != nil {
+			t.Errorf("expected (true, nil), got (%v, %v)", ok, err)
+		} else {
+			pollReady.Store(true)
+		}
+	}()
+
+	// short period passes with no writing to rx
+	time.Sleep(5 * time.Millisecond)
+	runtime.GC()
+
+	if pollReady.Load() {
+		t.Fatalf("PollR should not be ready yet without any pending write to rx")
 	}
 
-	// fill rx buffer
-	rx <- make([]byte, 32)
-	rx <- make([]byte, 32)
+	// simulate other end testing writability
+	select {
+	case rx <- []byte{}:
+		runtime.Gosched() // give the goroutine a chance to run
+	case <-longCtx.Done():
+		t.Fatalf("longCtx should not be done before we write to rx")
+	}
 
-	// PollRW should return true since both buffer is not full
+	if pollReady.Load() {
+		t.Fatalf("PollR should not be unblocked by other end testing writability")
+	}
+
+	select {
+	case rx <- make([]byte, 32):
+	case <-longCtx.Done():
+		t.Fatalf("longCtx should not be done before we write to rx")
+	}
+
+	wgPollR.Wait()
+	if !pollReady.Load() {
+		t.Fatalf("PollR should be ready after writing to rx")
+	}
+
+	// PollR again, should return true since we did not read from cconn
 	ctx, cancel3 := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel3()
 
-	if ok, err := cconn.PollRW(ctx); !ok {
-		t.Fatalf("expected true, got false")
-	} else if err != nil {
-		t.Fatalf("expected nil, got %v", err)
+	if ok, err := cconn.PollR(ctx); !ok || err != nil {
+		t.Fatalf("expected (true, nil), got (%v, %v)", ok, err)
+	}
+
+	// read from cconn
+	var recvBuf []byte = make([]byte, 64)
+	if n, err := cconn.Read(recvBuf); err != nil {
+		t.Fatalf("cconn.Read() failed: %v", err)
+	} else if n != 32 {
+		t.Fatalf("cconn.Read() read %d bytes, expected 32", n)
+	} else if !bytes.Equal(make([]byte, 32), recvBuf[:n]) {
+		t.Fatalf("sent and received buffers are not equal")
+	}
+
+	// PollR should return false since there is no pending message
+	ctx, cancel4 := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	defer cancel4()
+
+	if ok, err := cconn.PollR(ctx); ok || err != context.DeadlineExceeded {
+		t.Fatalf("expected (false, %v), got (%v, %v)", context.DeadlineExceeded, ok, err)
+	}
+}
+
+func testChannelConn_PollConn_Unbuffered_PollW(t *testing.T) {
+	// when no pending reader on tx, PollW should return false
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	defer cancel()
+
+	if ok, err := cconn.PollW(ctx); ok || err != context.DeadlineExceeded {
+		t.Fatalf("expected (false, %v), got (%v, %v)", context.DeadlineExceeded, ok, err)
+	}
+
+	longCtx, cancel2 := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel2()
+
+	// use a goroutine to poll for write
+	var pollReady atomic.Bool
+	var wgPollW sync.WaitGroup
+	wgPollW.Add(1)
+	go func() {
+		defer wgPollW.Done()
+
+		if ok, err := cconn.PollW(longCtx); !ok || err != nil {
+			t.Errorf("expected (true, nil), got (%v, %v)", ok, err)
+		} else {
+			pollReady.Store(true)
+		}
+	}()
+
+	// short period passes with no reading from tx
+	time.Sleep(5 * time.Millisecond)
+	runtime.GC()
+
+	if pollReady.Load() {
+		t.Fatalf("PollW should not be ready yet without any pending read from tx")
+	}
+
+	// simulate other end reading from tx
+	select {
+	case <-tx:
+		runtime.Gosched() // give the goroutine a chance to run
+	case <-longCtx.Done():
+		t.Fatalf("longCtx should not be done before we read from tx")
+	}
+
+	wgPollW.Wait()
+	if !pollReady.Load() {
+		t.Fatalf("PollW should be unblocked by other end reading from tx")
+	}
+
+	// However if we test again, it should return false since the pending read from tx is gone
+	ctx, cancel3 := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	defer cancel3()
+
+	if ok, err := cconn.PollW(ctx); ok || err != context.DeadlineExceeded {
+		t.Fatalf("expected (false, %v), got (%v, %v)", context.DeadlineExceeded, ok, err)
+	}
+
+	// Next, we verify that PollW will not unblock the other end
+	var sendBuf []byte = make([]byte, 32)
+	rand.Read(sendBuf)
+
+	// use rx and tx to create a reversed ChannelConn, use goroutine to read from it
+	rcconn := NewChannelConn(tx, rx)
+	// rcconn.SetNonblock(true)
+
+	var wgRcconn sync.WaitGroup
+	wgRcconn.Add(1)
+	go func() {
+		defer wgRcconn.Done()
+
+		var recvBuf []byte = make([]byte, 64)
+		if n, err := rcconn.Read(recvBuf); err != nil {
+			t.Errorf("rcconn.Read() failed: %v", err)
+		} else if n != len(sendBuf) {
+			t.Errorf("rcconn.Read() read %d bytes, expected %d", n, len(sendBuf))
+		} else if !bytes.Equal(sendBuf, recvBuf[:n]) {
+			t.Errorf("sent and received buffers are not equal")
+		}
+	}()
+
+	// PollW should return true since there is a pending read from tx
+	for i := 0; i < 10; i++ {
+		ctx, cancel4 := context.WithTimeout(context.Background(), 1*time.Millisecond)
+		defer cancel4()
+
+		if ok, err := cconn.PollW(ctx); !ok || err != nil {
+			t.Fatalf("expected (true, nil), got (%v, %v)", ok, err)
+		}
+	}
+
+	// write to cconn
+	for {
+		if n, err := cconn.Write(sendBuf); err != nil {
+			if err == syscall.EAGAIN {
+				runtime.Gosched() // give the goroutine a chance to run
+				continue
+			}
+			t.Fatalf("cconn.Write() failed: %v", err)
+		} else if n != len(sendBuf) {
+			t.Fatalf("cconn.Write() wrote %d bytes, expected %d", n, len(sendBuf))
+		}
+		break
+	}
+
+	wgRcconn.Wait()
+
+	// PollW should return false since the pending read from tx is gone
+	ctx, cancel5 := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	defer cancel5()
+
+	if ok, err := cconn.PollW(ctx); ok || err != context.DeadlineExceeded {
+		t.Fatalf("expected (false, %v), got (%v, %v)", context.DeadlineExceeded, ok, err)
 	}
 }
