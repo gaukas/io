@@ -8,6 +8,10 @@ import (
 
 // ChannelConnPair creates a pair of interconnected [conn.ChannelConn]. Data written
 // to one connection will become readable from the other.
+//
+// Note: This function creates unbuffered channels which will block on write
+// if the other side is not reading, assuming nonblocking mode is not set.
+// Use [BufferedChannelConnPair] instead if channel capacity > 0 is desired.
 func ChannelConnPair() (c1, c2 *conn.ChannelConn) {
 	// channels as pipes
 	chan1 := make(chan []byte)
