@@ -25,7 +25,10 @@ func TestChannelConnPair(t *testing.T) {
 	// Test c1 -> c2
 	for i := 0; i < 10; i++ {
 		go func() {
-			rand.Read(buf)
+			if _, err := rand.Read(buf); err != nil {
+				t.Errorf("rand.Read() failed: %v", err)
+			}
+
 			nWr, err := c1.Write(buf)
 			if err != nil {
 				t.Errorf("c1.Write() failed: %v", err)
@@ -52,7 +55,9 @@ func TestChannelConnPair(t *testing.T) {
 	// Test c2 -> c1
 	for i := 0; i < 10; i++ {
 		go func() {
-			rand.Read(buf)
+			if _, err := rand.Read(buf); err != nil {
+				t.Errorf("rand.Read() failed: %v", err)
+			}
 			nWr, err := c2.Write(buf)
 			if err != nil {
 				t.Errorf("c2.Write() failed: %v", err)
@@ -82,7 +87,9 @@ func TestChannelConnPair(t *testing.T) {
 	// remaining part of the message.
 	var bigBuf []byte = make([]byte, 16*1024) // 16 KiB
 	go func() {
-		rand.Read(bigBuf)
+		if _, err := rand.Read(bigBuf); err != nil {
+			t.Errorf("rand.Read() failed: %v", err)
+		}
 		nWr, err := c1.Write(bigBuf)
 		if err != nil {
 			t.Errorf("c1.Write() failed: %v", err)

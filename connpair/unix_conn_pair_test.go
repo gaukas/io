@@ -33,7 +33,9 @@ func TestUnixConnPair(t *testing.T) {
 
 	// Test c1 -> c2
 	for i := 0; i < 10; i++ {
-		rand.Read(buf)
+		if _, err := rand.Read(buf); err != nil {
+			t.Errorf("rand.Read() failed: %v", err)
+		}
 		nWr, err := c1.Write(buf)
 		if err != nil {
 			t.Errorf("c1.Write() failed: %v", err)
@@ -58,7 +60,9 @@ func TestUnixConnPair(t *testing.T) {
 
 	// Test c2 -> c1
 	for i := 0; i < 10; i++ {
-		rand.Read(buf)
+		if _, err := rand.Read(buf); err != nil {
+			t.Errorf("rand.Read() failed: %v", err)
+		}
 		nWr, err := c2.Write(buf)
 		if err != nil {
 			t.Errorf("c2.Write() failed: %v", err)

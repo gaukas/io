@@ -33,7 +33,9 @@ func TestTCPConnPair(t *testing.T) {
 
 	// Test c1 -> c2
 	for i := 0; i < 10; i++ {
-		rand.Read(buf)
+		if _, err := rand.Read(buf); err != nil {
+			t.Errorf("rand.Read() failed: %v", err)
+		}
 		nWr, err := c1.Write(buf)
 		if err != nil {
 			t.Errorf("c1.Write() failed: %v", err)
@@ -58,7 +60,9 @@ func TestTCPConnPair(t *testing.T) {
 
 	// Test c2 -> c1
 	for i := 0; i < 10; i++ {
-		rand.Read(buf)
+		if _, err := rand.Read(buf); err != nil {
+			t.Errorf("rand.Read() failed: %v", err)
+		}
 		nWr, err := c2.Write(buf)
 		if err != nil {
 			t.Errorf("c2.Write() failed: %v", err)
@@ -95,13 +99,17 @@ func benchmarkTCPConnPair_Write(b *testing.B) {
 		if c1 == nil || c2 == nil {
 			b.Fatalf("connpair.TCPConnPair: %v", err)
 		} else { // likely due to (net.Listener).Close() call errored
-			b.Logf("ignoring connpair.TCPConnPair: %v", err)
+			b.Logf("ignored: connpair.TCPConnPair: %v", err)
 		}
 	}
 
 	// Disable Nagle's algorithm to cancel the potential performance impact
-	c1.SetNoDelay(true)
-	c2.SetNoDelay(true)
+	if err := c1.SetNoDelay(true); err != nil {
+		b.Logf("ignored: c1.SetNoDelay(true) failed: %v", err)
+	}
+	if err := c2.SetNoDelay(true); err != nil {
+		b.Logf("ignored: c2.SetNoDelay(true) failed: %v", err)
+	}
 
 	var buf []byte = make([]byte, 1024)
 
@@ -163,13 +171,17 @@ func benchmarkTCPConnPair_Read(b *testing.B) {
 		if c1 == nil || c2 == nil {
 			b.Fatalf("connpair.TCPConnPair: %v", err)
 		} else { // likely due to (net.Listener).Close() call errored
-			b.Logf("ignoring connpair.TCPConnPair: %v", err)
+			b.Logf("ignored: connpair.TCPConnPair: %v", err)
 		}
 	}
 
 	// Disable Nagle's algorithm to cancel the potential performance impact
-	c1.SetNoDelay(true)
-	c2.SetNoDelay(true)
+	if err := c1.SetNoDelay(true); err != nil {
+		b.Logf("ignored: c1.SetNoDelay(true) failed: %v", err)
+	}
+	if err := c2.SetNoDelay(true); err != nil {
+		b.Logf("ignored: c2.SetNoDelay(true) failed: %v", err)
+	}
 
 	var blockWriter *sync.Mutex = new(sync.Mutex)
 	blockWriter.Lock()
