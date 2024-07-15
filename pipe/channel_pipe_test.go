@@ -1,4 +1,4 @@
-package connpair_test
+package pipe_test
 
 import (
 	"bytes"
@@ -10,11 +10,11 @@ import (
 	"crypto/rand"
 
 	"github.com/gaukas/io/conn"
-	. "github.com/gaukas/io/connpair"
+	. "github.com/gaukas/io/pipe"
 )
 
-func TestChannelConnPair(t *testing.T) {
-	c1, c2 := ChannelConnPair()
+func TestChannelPipe(t *testing.T) {
+	c1, c2 := ChannelPipe()
 
 	var buf []byte = make([]byte, 1024)
 	var recvBuf []byte = make([]byte, 1024)
@@ -126,15 +126,15 @@ func TestChannelConnPair(t *testing.T) {
 	}
 }
 
-func BenchmarkChannelConnPair(b *testing.B) {
-	b.Run("Write", benchmarkChannelConnPair_Write)
-	b.Run("Read", benchmarkChannelConnPair_Read)
+func BenchmarkChannelPipe(b *testing.B) {
+	b.Run("Write", benchmarkChannelPipe_Write)
+	b.Run("Read", benchmarkChannelPipe_Read)
 }
 
-func benchmarkChannelConnPair_Write(b *testing.B) {
+func benchmarkChannelPipe_Write(b *testing.B) {
 	b.SetBytes(1024)
 
-	c1, c2 := ChannelConnPair()
+	c1, c2 := ChannelPipe()
 
 	var buf []byte = make([]byte, 1024)
 
@@ -188,10 +188,10 @@ func benchmarkChannelConnPair_Write(b *testing.B) {
 	b.StopTimer() // stop timer only after the reader returns, to make sure all data is received by the reader
 }
 
-func benchmarkChannelConnPair_Read(b *testing.B) {
+func benchmarkChannelPipe_Read(b *testing.B) {
 	b.SetBytes(1024)
 
-	c1, c2 := ChannelConnPair()
+	c1, c2 := ChannelPipe()
 
 	var writerWg sync.WaitGroup
 	writerWg.Add(1)

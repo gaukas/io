@@ -1,4 +1,4 @@
-package connpair_test
+package pipe_test
 
 import (
 	"bytes"
@@ -12,16 +12,16 @@ import (
 	"testing"
 
 	"github.com/gaukas/io/conn"
-	. "github.com/gaukas/io/connpair"
+	. "github.com/gaukas/io/pipe"
 )
 
-func TestTCPConnPair(t *testing.T) {
-	c1, c2, err := TCPConnPair(nil)
+func TestTCPPipe(t *testing.T) {
+	c1, c2, err := TCPPipe(nil)
 	if err != nil {
 		if c1 == nil || c2 == nil {
-			t.Fatalf("connpair.TCPConnPair: %v", err)
+			t.Fatalf("pipe.TCPPipe: %v", err)
 		} else { // likely due to Close() call errored
-			t.Logf("ignoring connpair.TCPConnPair: %v", err)
+			t.Logf("ignoring pipe.TCPPipe: %v", err)
 		}
 	}
 
@@ -86,20 +86,20 @@ func TestTCPConnPair(t *testing.T) {
 	// is shorter than the message sent by its peer.
 }
 
-func BenchmarkTCPConnPair(b *testing.B) {
-	b.Run("Write", benchmarkTCPConnPair_Write)
-	b.Run("Read", benchmarkTCPConnPair_Read)
+func BenchmarkTCPPipe(b *testing.B) {
+	b.Run("Write", benchmarkTCPPipe_Write)
+	b.Run("Read", benchmarkTCPPipe_Read)
 }
 
-func benchmarkTCPConnPair_Write(b *testing.B) {
+func benchmarkTCPPipe_Write(b *testing.B) {
 	b.SetBytes(1024)
 
-	c1, c2, err := TCPConnPair(nil)
+	c1, c2, err := TCPPipe(nil)
 	if err != nil {
 		if c1 == nil || c2 == nil {
-			b.Fatalf("connpair.TCPConnPair: %v", err)
+			b.Fatalf("pipe.TCPPipe: %v", err)
 		} else { // likely due to (net.Listener).Close() call errored
-			b.Logf("ignored: connpair.TCPConnPair: %v", err)
+			b.Logf("ignored: pipe.TCPPipe: %v", err)
 		}
 	}
 
@@ -163,15 +163,15 @@ func benchmarkTCPConnPair_Write(b *testing.B) {
 	b.StopTimer() // stop timer only after the reader returns, to make sure all data is received by the reader
 }
 
-func benchmarkTCPConnPair_Read(b *testing.B) {
+func benchmarkTCPPipe_Read(b *testing.B) {
 	b.SetBytes(1024)
 
-	c1, c2, err := TCPConnPair(nil)
+	c1, c2, err := TCPPipe(nil)
 	if err != nil {
 		if c1 == nil || c2 == nil {
-			b.Fatalf("connpair.TCPConnPair: %v", err)
+			b.Fatalf("pipe.TCPPipe: %v", err)
 		} else { // likely due to (net.Listener).Close() call errored
-			b.Logf("ignored: connpair.TCPConnPair: %v", err)
+			b.Logf("ignored: pipe.TCPPipe: %v", err)
 		}
 	}
 

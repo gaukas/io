@@ -1,13 +1,13 @@
-package connpair
+package pipe
 
 import (
 	"fmt"
 	"net"
 )
 
-// TCPConnPair creates a pair of interconnected [net.TCPConn]. Data written
+// TCPPipe creates a pair of interconnected [net.TCPConn]. Data written
 // to one connection will become readable from the other.
-func TCPConnPair(listenAddr *net.TCPAddr) (c1, c2 *net.TCPConn, err error) {
+func TCPPipe(listenAddr *net.TCPAddr) (c1, c2 *net.TCPConn, err error) {
 	if listenAddr == nil {
 		listenAddr, err = net.ResolveTCPAddr("tcp", "localhost:0")
 		if err != nil {

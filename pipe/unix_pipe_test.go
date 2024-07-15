@@ -1,4 +1,4 @@
-package connpair_test
+package pipe_test
 
 import (
 	"bytes"
@@ -12,16 +12,16 @@ import (
 	"testing"
 
 	"github.com/gaukas/io/conn"
-	. "github.com/gaukas/io/connpair"
+	. "github.com/gaukas/io/pipe"
 )
 
-func TestUnixConnPair(t *testing.T) {
-	c1, c2, err := UnixConnPair(nil)
+func TestUnixPipe(t *testing.T) {
+	c1, c2, err := UnixPipe(nil)
 	if err != nil {
 		if c1 == nil || c2 == nil {
-			t.Fatalf("connpair.UnixConnPair: %v", err)
+			t.Fatalf("pipe.UnixPipe: %v", err)
 		} else { // likely due to Close() call errored
-			t.Logf("ignoring connpair.UnixConnPair: %v", err)
+			t.Logf("ignoring pipe.UnixPipe: %v", err)
 		}
 	}
 
@@ -86,20 +86,20 @@ func TestUnixConnPair(t *testing.T) {
 	// is shorter than the message sent by its peer.
 }
 
-func BenchmarkUnixConnPair(b *testing.B) {
-	b.Run("Write", benchmarkUnixConnPair_Write)
-	b.Run("Read", benchmarkUnixConnPair_Read)
+func BenchmarkUnixPipe(b *testing.B) {
+	b.Run("Write", benchmarkUnixPipe_Write)
+	b.Run("Read", benchmarkUnixPipe_Read)
 }
 
-func benchmarkUnixConnPair_Write(b *testing.B) {
+func benchmarkUnixPipe_Write(b *testing.B) {
 	b.SetBytes(1024)
 
-	c1, c2, err := UnixConnPair(nil)
+	c1, c2, err := UnixPipe(nil)
 	if err != nil {
 		if c1 == nil || c2 == nil {
-			b.Fatalf("connpair.UnixConnPair: %v", err)
+			b.Fatalf("pipe.UnixPipe: %v", err)
 		} else { // likely due to (net.Listener).Close() call errored
-			b.Logf("ignoring connpair.UnixConnPair: %v", err)
+			b.Logf("ignoring pipe.UnixPipe: %v", err)
 		}
 	}
 
@@ -155,15 +155,15 @@ func benchmarkUnixConnPair_Write(b *testing.B) {
 	b.StopTimer() // stop timer only after the reader returns, to make sure all data is received by the reader
 }
 
-func benchmarkUnixConnPair_Read(b *testing.B) {
+func benchmarkUnixPipe_Read(b *testing.B) {
 	b.SetBytes(1024)
 
-	c1, c2, err := UnixConnPair(nil)
+	c1, c2, err := UnixPipe(nil)
 	if err != nil {
 		if c1 == nil || c2 == nil {
-			b.Fatalf("connpair.UnixConnPair: %v", err)
+			b.Fatalf("pipe.UnixPipe: %v", err)
 		} else { // likely due to (net.Listener).Close() call errored
-			b.Logf("ignoring connpair.UnixConnPair: %v", err)
+			b.Logf("ignoring pipe.UnixPipe: %v", err)
 		}
 	}
 

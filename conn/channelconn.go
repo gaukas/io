@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net"
 	"os"
 	"runtime"
 	"sync"
@@ -173,8 +174,19 @@ func (c *ChannelConn) Close() error {
 	return io.ErrClosedPipe // double close
 }
 
+type channelAddr struct{}
+
+func (channelAddr) Network() string { return "channel" }
+func (channelAddr) String() string  { return "channel" }
+
 // ChannelConn does not implement [NetworkConn].
-// var _ NetworkConn = (*ChannelConn)(nil)
+var _ NetworkConn = (*ChannelConn)(nil)
+
+// LocalAddr returns the local network address. Implements [net.Conn].
+func (*ChannelConn) LocalAddr() net.Addr { return channelAddr{} }
+
+// RemoteAddr returns the remote network address. Implements [net.Conn].
+func (*ChannelConn) RemoteAddr() net.Addr { return channelAddr{} }
 
 // ChannelConn does not implement [DeadlineConn]. However, fake implementation
 // is provided such that it can be used as [net.Conn] in some cases when

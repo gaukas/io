@@ -1,4 +1,4 @@
-package connpair
+package pipe
 
 import (
 	"crypto/rand"
@@ -7,9 +7,9 @@ import (
 	"os"
 )
 
-// UnixConnPair creates a pair of interconnected [net.UnixConn]. Data written
+// UnixPipe creates a pair of interconnected [net.UnixConn]. Data written
 // to one connection will become readable from the other.
-func UnixConnPair(listenAddr *net.UnixAddr) (c1, c2 *net.UnixConn, err error) {
+func UnixPipe(listenAddr *net.UnixAddr) (c1, c2 *net.UnixConn, err error) {
 	if listenAddr == nil {
 		// randomize a socket name
 		randBytes := make([]byte, 16)
